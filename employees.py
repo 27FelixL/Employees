@@ -44,21 +44,25 @@ class Employee(ABC):
         self.performance = INITIAL_PERFORMANCE
         self.happiness = INITIAL_HAPPINESS
         self.salary = salary
-    
+
     @property
     def name(self):
+        "Read-only name"
         return self.__name
 
     @property
     def manager(self):
+        "Read-only manager"
         return self.__manager
 
     @property
     def performance(self):
+        "Performance reader"
         return self._performance
 
     @performance.setter
     def performance(self, value):
+        "Performance setter"
         if value < PERCENTAGE_MIN:
             self._performance = PERCENTAGE_MIN
         elif value > PERCENTAGE_MAX:
@@ -68,10 +72,12 @@ class Employee(ABC):
 
     @property
     def happiness(self):
+        "Happiness reader"
         return self._happiness
 
     @happiness.setter
     def happiness(self, value):
+        "Happiness setter"
         if value < PERCENTAGE_MIN:
             self._happiness = PERCENTAGE_MIN
         elif value > PERCENTAGE_MAX:
@@ -81,17 +87,19 @@ class Employee(ABC):
 
     @property
     def salary(self):
+        "Salary reader"
         return self._salary
 
     @salary.setter
     def salary(self, value):
+        "Salary setter"
         if value < 0:
             raise ValueError(SALARY_ERROR_MESSAGE)
         self._salary = value
 
     @abstractmethod
     def work(self):
-        pass
+        "Work abstract method"
 
     def interact(self, other):
         """
@@ -108,7 +116,7 @@ class Employee(ABC):
         else:
             self.relationships[other.name] -= 1
             self.happiness -= 1
-    
+
     def daily_expense(self):
         """
         Simulates the employee’s daily expenses by reducing their happiness and savings.
@@ -120,7 +128,11 @@ class Employee(ABC):
         """
         Returns a string representation of the employee's current state.
         """
-        return f"{self.name}\n\tSalary: ${self.salary}\n\tSavings: ${self.savings}\n\tHappiness: {self.happiness}%\n\tPerformance: {self.performance}%"
+        return (f"{self.name}\n"
+        f"\tSalary: ${self.salary}\n"
+        f"\tSavings: ${self.savings}\n"
+        f"\tHappiness: {self.happiness}%\n"
+        f"\tPerformance: {self.performance}%")
 
 class Manager(Employee):
     """
@@ -130,7 +142,7 @@ class Manager(Employee):
         """
         Simulates 1 hour of work for the manager.
         Adjusts performance randomly between -5 and 5.
-        If performance decreases or stays the same, the manager loses happiness and relationships worsen.
+        If performance decreases or stays the same, the manager loses happiness.
         If performance increases, the manager gains happiness.
         """
         performance_change = random.randint(-5, 5)
@@ -141,21 +153,17 @@ class Manager(Employee):
                 self.relationships[employee] -= 1
         else:
             self.happiness += 1
-            
+
 class TemporaryEmployee(Employee):
     """
-    A subclass of Employee representing a temporary employee.
+    Class representing a temporary employee. Inherits from the Employee class.
     """
-    HAPPINESS_THRESHOLD = 50
-    TEMP_EMPLOYEE_PERFORMANCE_THRESHOLD = 50
-    MANAGER_BONUS = 1000
-    
     def work(self):
         """
         Simulates 1 hour of work for a temporary employee.
-        Adjusts performance randomly between -15 and 15.
-        If performance decreases or stays the same, the employee loses 2 happiness.
-        If performance increases, the employee gains 1 happiness.
+        Performance is randomly adjusted by an integer value between -15 and 15.
+        If performance decreases or stays the same, happiness decreases by 2.
+        If performance increases, happiness improves by 1.
         """
         performance_change = random.randint(-15, 15)
         self.performance += performance_change
@@ -165,30 +173,32 @@ class TemporaryEmployee(Employee):
             self.happiness += 1
 
     def interact(self, other):
+        """
+        Simulates an interaction between this temporary employee and another employee.
+        Calls the interact method from the Employee class and modifies 
+        the temporary employee’s happiness and savings.
+        """
         super().interact(other)
-        if isinstance(other, Employee) and hasattr(other, 'is_manager') and other.is_manager:
-            manager = other
-            if manager.happiness > self.HAPPINESS_THRESHOLD and self.performance >= self.TEMP_EMPLOYEE_PERFORMANCE_THRESHOLD:
-                self.savings += self.MANAGER_BONUS
-            if manager.happiness <= self.HAPPINESS_THRESHOLD:
+        if other == self.manager:
+            if self.manager.happiness > HAPPINESS_THRESHOLD:
+                if self.performance >= TEMP_EMPLOYEE_PERFORMANCE_THRESHOLD:
+                    self.savings += MANAGER_BONUS
+            else:
                 self.salary = self.salary // 2
                 self.happiness -= 5
-            if self.salary == 0:
-                self.is_employed = False
+                if self.salary == 0:
+                    self.is_employed = False
 
 class PermanentEmployee(Employee):
     """
-    A subclass of Employee representing a permanent employee.
+    Class representing a permanent employee. Inherits from the Employee class.
     """
-    HAPPINESS_THRESHOLD = 50
-    PERM_EMPLOYEE_PERFORMANCE_THRESHOLD = 25
-    MANAGER_BONUS = 1000
-    
     def work(self):
         """
-        Simulates 1 hour of work for the permanent employee.
-        Adjusts performance by a random value between -10 and 10.
-        Increases happiness if the performance change is non-negative.
+        Simulates 1 hour of work for a permanent employee.
+        Performance is randomly adjusted by an integer value between -10 and 10.
+        If the performance change is greater than or equal to 0, the 
+        employee’s happiness increases by 1.
         """
         performance_change = random.randint(-10, 10)
         self.performance += performance_change
@@ -197,14 +207,14 @@ class PermanentEmployee(Employee):
 
     def interact(self, other):
         """
-        Simulates an interaction between a permanent employee and another employee.
-        The interaction first calls the Employee class's interact() method.
-        If interacting with their manager, the employee's savings or happiness may be adjusted.
+        Simulates an interaction between this permanent employee and another employee.
+        Calls the interact method from the Employee class and modifies the permanent 
+        employee’s happiness and savings.
         """
         super().interact(other)
-        if isinstance(other, Employee) and getattr(other, 'is_manager', False):
-            manager = other
-            if manager.happiness > self.HAPPINESS_THRESHOLD and self.performance > self.PERM_EMPLOYEE_PERFORMANCE_THRESHOLD:
-                self.savings += self.MANAGER_BONUS
-            if manager.happiness <= self.HAPPINESS_THRESHOLD:
+        if other == self.manager:
+            if self.manager.happiness > HAPPINESS_THRESHOLD:
+                if self.performance > PERM_EMPLOYEE_PERFORMANCE_THRESHOLD:
+                    self.savings += MANAGER_BONUS
+            else:
                 self.happiness -= 1
